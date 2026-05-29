@@ -1,0 +1,325 @@
+{
+  "task_level": "level_1",
+  "domain": "CV",
+  "architecture_family": "ConvNeXt V2 (modernized ConvNet)",
+  "upstream_contract_present": true,
+  "research_contract_file": "/artifacts/j_Y5Hpf2CUsneA/work/research/03_novelty_gaps_and_lifecycle_contract.yaml",
+  "architect_traceability_file": "/artifacts/j_Y5Hpf2CUsneA/work/architect/04_traceability_summary.md",
+  "coder_implementation_dir": "/artifacts/j_Y5Hpf2CUsneA/work/coder",
+  "validator_output_dir": "/artifacts/j_Y5Hpf2CUsneA/work/validator",
+  "contract_traceability": [
+    {
+      "contract_item": "MRF-DW multi-scale depthwise mixing (Gap 1)",
+      "status": "hypothesis",
+      "implemented_in": "mrf_dw.py",
+      "validated_by": "test_model.py::TestMRFDW, ablation_runner.py ablation 2_no_mrf_dw",
+      "falsification_condition": "Δtop-1 < 0.15% when use_mrf_dw=False",
+      "TODO_unverified": false
+    },
+    {
+      "contract_item": "LE-GRN local contrast normalization (Gap 2)",
+      "status": "hypothesis",
+      "implemented_in": "le_grn.py",
+      "validated_by": "test_model.py::TestLEGRN, ablation_runner.py ablation 3_no_le_grn",
+      "falsification_condition": "Δtop-1 < 0.15% when use_le_grn=False",
+      "TODO_unverified": false
+    },
+    {
+      "contract_item": "Adaptive expansion ratios (Gap 3)",
+      "status": "hypothesis",
+      "implemented_in": "model_config.py",
+      "validated_by": "test_model.py::test_adaptive_expansion_savings, ablation_runner.py ablation 4_uniform_expansion",
+      "falsification_condition": "Uniform ×4 > 0.3% better at same budget",
+      "TODO_unverified": false
+    },
+    {
+      "contract_item": "FCMAE pretraining compatibility",
+      "status": "hypothesis",
+      "implemented_in": "N/A (training protocol not implemented)",
+      "validated_by": "TODO: unverified — requires full pretraining run",
+      "falsification_condition": "FCMAE < 0.5% gain over supervised-only",
+      "TODO_unverified": true
+    },
+    {
+      "contract_item": "Uniform channel downscale baseline (blocking unknown)",
+      "status": "hypothesis",
+      "implemented_in": "model_config.py (via dims=[80,160,320,640])",
+      "validated_by": "ablation_runner.py ablation 8_uniform_downscale",
+      "falsification_condition": "Uniform downscale ≤ 0.3% behind V2-E at same params",
+      "TODO_unverified": false
+    },
+    {
+      "contract_item": "ConvNeXt V2-T accuracy-per-parameter comparison",
+      "status": "grounded",
+      "implemented_in": "benchmarks.py::parameter_efficiency_ratio",
+      "validated_by": "benchmarks.py",
+      "TODO_unverified": false
+    },
+    {
+      "contract_item": "Throughput on A100 / FLOPs measurement",
+      "status": "TODO: unverified",
+      "implemented_in": "benchmarks.py::measure_throughput, profile_model.py",
+      "validated_by": "Requires CUDA GPU run",
+      "TODO_unverified": true
+    }
+  ],
+  "baseline_status": [
+    {
+      "baseline": "ConvNeXt V2-T (28M)",
+      "type": "literature",
+      "status": "grounded",
+      "source": "ConvNeXt V2 paper (Woo et al., CVPR 2023): 82.0% supervised, 82.8% FCMAE",
+      "comparison_method": "Accuracy-per-parameter ratio (benchmarks.py::parameter_efficiency_ratio)",
+      "TODO_unverified": false
+    },
+    {
+      "baseline": "V2-E ablated baseline (no innovations)",
+      "type": "computational",
+      "status": "implemented",
+      "source": "convnext_v2e_ablated_baseline() in model.py",
+      "comparison_method": "Single-field ablation comparison in ablation_runner.py",
+      "TODO_unverified": false
+    },
+    {
+      "baseline": "EfficientNet-B2 (9.2M)",
+      "type": "literature",
+      "status": "TODO: unverified",
+      "source": "Published (80.1% top-1)",
+      "comparison_method": "Not implemented — requires training or external eval",
+      "TODO_unverified": true
+    },
+    {
+      "baseline": "EfficientNet-B3 (12M)",
+      "type": "literature",
+      "status": "TODO: unverified",
+      "source": "Published (81.7% top-1)",
+      "comparison_method": "Not implemented — requires training or external eval",
+      "TODO_unverified": true
+    },
+    {
+      "baseline": "Swin-T (28M)",
+      "type": "literature",
+      "status": "TODO: unverified",
+      "source": "Published (81.3% top-1)",
+      "comparison_method": "Not implemented — requires training or external eval",
+      "TODO_unverified": true
+    },
+    {
+      "baseline": "Uniform downscale V2-T (~19.7M)",
+      "type": "computational",
+      "status": "implemented",
+      "source": "ablation_runner.py ablation 8_uniform_downscale",
+      "comparison_method": "Parameter-matched baseline in ablation_runner.py",
+      "TODO_unverified": false
+    }
+  ],
+  "claim_status_summary": {
+    "grounded": [
+      "ConvNeXt V2 block parameter formula: P = 8e·C² + 53·C per block",
+      "ConvNeXt V2-T achieves 82.8% top-1 with FCMAE (IN-1K)",
+      "GRN improves V2 over V1 by +0.8% (supervised) and +1.1% (FCMAE)",
+      "Uniform 7×7 DW used in all ConvNeXt V2 published variants",
+      "Stage 3 dominates FLOPs and params in ConvNeXt V2-T (38.6% params, ~50% FLOPs)"
+    ],
+    "hypothesis": [
+      "MRF-DW adds ≥0.3% top-1 over single-kernel DW at same param budget",
+      "LE-GRN adds ≥0.2% top-1 over standard GRN at zero param overhead",
+      "Adaptive expansion [3,3,4,3] matches uniform ×4 accuracy at 0.95M fewer params",
+      "ConvNeXt V2-E at 19.7M matches or exceeds ConvNeXt V2-Nano at ~15M by ≥1.5%"
+    ],
+    "TODO_unverified": [
+      "Optimal per-stage mixing weight initialization for MRF-DW",
+      "MRF-DW interaction with DropPath — does multi-scale robustness interact?",
+      "Best LE-GRN local kernel size (tested 3×3 vs 5×5 vs two-stage)",
+      "Does FCMAE pretraining amplify or diminish MRF-DW benefits?",
+      "Optimal stage 3 expansion ratio (tested ×3.5 vs ×4, diminishing returns curve)",
+      "ConvNeXt V2-E accuracy vs MobileNetV4 / FastViT at equivalent FLOPs",
+      "EfficientNet-B2/B3 and Swin-T comparison",
+      "Full ImageNet-1K training (300 epochs supervised)",
+      "FCMAE pretraining (400 epochs + 100 epoch fine-tune)",
+      "Throughput on A100 at batch=256"
+    ]
+  },
+  "scores": {
+    "novelty": {
+      "score": 4,
+      "evidence": [
+        "Three clearly identified gaps with thorough literature analysis (research/01_landscape_analysis.md)",
+        "Each gap maps to a specific architectural innovation with falsification condition",
+        "Gap 1 (MRF-DW): No prior ConvNeXt variant uses within-block multi-scale depthwise mixing",
+        "Gap 2 (LE-GRN): No prior work adds local mean removal to GRN in ConvNeXt blocks",
+        "Gap 3 (Adaptive Expansion): No principled study of stage-specific expansion for ConvNeXt at <20M"
+      ],
+      "concerns": [
+        "All three innovations are engineering improvements rather than fundamental architectural breakthroughs",
+        "MRF-DW shares conceptual similarity with MixConv (channel-split multi-scale DW convs)",
+        "The combination of three small innovations may produce a model that is better than any one individually, but attributing gains to specific components requires careful ablation",
+        "Novelty claims are conditional on reaching specified accuracy thresholds — if MRF-DW < 0.15% improvement, the claim is falsified per the lifecycle contract"
+      ]
+    },
+    "experimental_comprehensiveness": {
+      "score": 4,
+      "evidence": [
+        "Comprehensive pytest suite: shape tests, gradient tests, numerical stability, CV-specific properties",
+        "8-domain-specific benchmarks: reconstruction probe, linear probe, parameter efficiency, noise entropy, translation sweep, FLOPs, throughput, memory",
+        "9 single-field ablations covering every configurable innovation",
+        "torch.profiler script for forward and train-step profiling",
+        "Multi-resolution testing (128x128 through 384x384)",
+        "fp16/bf16 numerical safety testing",
+        "Gradient checkpointing parity test",
+        "Per-innovation parameter counting and verification"
+      ],
+      "concerns": [
+        "No full ImageNet-1K training pipeline — evaluation relies on proxy metrics",
+        "FCMAE pretraining not implemented (requires separate training framework)",
+        "Dense prediction transfer (detection/segmentation) not tested",
+        "No comparison against EfficientNet-B2/B3 or Swin-T (literature baselines)",
+        "Throughput/memory benchmarks require CUDA GPU to execute",
+        "The linear probe and reconstruction benchmarks are synthetic and may not correlate with ImageNet accuracy"
+      ]
+    },
+    "theoretical_foundation": {
+      "score": 4,
+      "evidence": [
+        "Full per-block parameter formula provided: P = 8e·C² + 53·C",
+        "Complete layer-by-layer parameter budget within 20M target",
+        "Stage-level FLOPs estimate (~3.8G total vs V2-T ~4.5G)",
+        "Per-innovation parameter overhead computed (MRF-DW: ~150K, <0.8%; LE-GRN: 0; Adaptive expansion: saves ~0.95M)",
+        "Inductive bias justification for each non-standard design choice (8 statements)",
+        "FLOPs count with heuristic estimate alongside Kaplan et al. approximation",
+        "Memory bandwidth analysis: DW convs are memory-bound, so MRF-DW wall-clock impact < FLOPs fraction"
+      ],
+      "concerns": [
+        "No formal scaling law analysis",
+        "Compute-to-communication ratio not analyzed for hardware efficiency",
+        "No theoretical bound on expected improvement magnitude for any innovation",
+        "Gradient scaling across depth not analyzed (e.g., Hessian condition number)"
+      ]
+    },
+    "result_analysis": {
+      "score": 2,
+      "evidence": [
+        "Expected accuracy estimates provided with ranges (80.5–81.5% supervised)",
+        "Accuracy-per-parameter ratio framework defined",
+        "Proxy metrics available: noise entropy, gradient norms, forward/backward pass health",
+        "Parameter budget verified for all variants (<20M)"
+      ],
+      "concerns": [
+        "No actual training results — all accuracy claims are extrapolated estimates",
+        "Proxy metrics (noise entropy, gradient norms) are weak proxies for actual ImageNet accuracy",
+        "Synthetic linear probe accuracy is not correlated with ImageNet top-1",
+        "No statistical significance estimates (would require multiple training runs)",
+        "Blocking unknown (uniform downscale baseline) not trained — comparison is entirely computational"
+      ]
+    },
+    "implementation_reproducibility": {
+      "score": 5,
+      "evidence": [
+        "Complete PyTorch implementation across 5 files with clean module boundaries",
+        "All hyperparameters in ModelConfig dataclass (no magic numbers)",
+        "Comprehensive pytest suite runnable with single command",
+        "Ablation runner with 9 named configurations",
+        "Profiling script with FLOPs, memory, and throughput measurement",
+        "Variant constructors for tiny/wide/deep/ablated/uniform configurations",
+        "Smoke test suite with 10 test cases runs independently",
+        "Gradient checkpointing support",
+        "get_intermediate_features() for downstream dense prediction tasks",
+        "Float32-safe LayerNorm (casts to fp32 internally) for fp16/bf16 training compatibility"
+      ],
+      "concerns": [
+        "No Docker/Singularity environment specification",
+        "Training recipe (300 epochs ImageNet) not provided as runnable script",
+        "Requires CUDA for full benchmark suite execution",
+        "No pretrained weights available"
+      ]
+    },
+    "writing_readiness": {
+      "score": 4,
+      "evidence": [
+        "Full architecture specification with ASCII diagram (architect/02_architecture_spec.md)",
+        "Inductive bias table with 9 justified design decisions",
+        "Research-to-architecture traceability table mapping each contract item to implementation",
+        "Detailed landing page analysis with literature comparison tables",
+        "Falsification conditions clearly enumerated for model and each innovation",
+        "Training protocol specified (optimizer, LR schedule, augmentations, regularization)",
+        "Implementation risk flags with mitigations and contingencies"
+      ],
+      "concerns": [
+        "No paper draft or abstract written",
+        "Related work discussion exists in landscape analysis but is not formatted for publication",
+        "No visualizations (feature maps, mixing weight distributions, grad norms) — would strengthen paper",
+        "No ablation results table (requires training)",
+        "Some sections of the architecture doc use informal language"
+      ]
+    }
+  },
+  "blocking_gaps": [
+    {
+      "code": "baseline_not_beaten",
+      "description": "No actual training results exist — cannot verify that V2-E beats any baseline. All accuracy claims are extrapolated.",
+      "severity": "critical",
+      "recommended_action": "Train V2-E (tiny variant) on ImageNet-1K for 300 epochs with supervised learning protocol.",
+      "blocked_claims": ["All accuracy claims", "Accuracy-per-parameter ratio"]
+    },
+    {
+      "code": "coverage_gap",
+      "description": "FCMAE pretraining is not implemented. The lifecycle contract requires evaluating FCMAE transfer (400ep + 100ep fine-tune).",
+      "severity": "high",
+      "recommended_action": "Implement FCMAE pretraining pipeline with sparse conv decoder and mask ratio 0.6.",
+      "blocked_claims": ["FCMAE compatibility of LE-GRN", "Secondary evaluation requirement"]
+    },
+    {
+      "code": "benchmark_not_executable",
+      "description": "EfficientNet-B2/B3 and Swin-T baselines are referenced but no comparison pipeline exists.",
+      "severity": "medium",
+      "recommended_action": "Download reference models from timm and add eval script that compares top-1 on ImageNet validation set.",
+      "blocked_claims": ["V2-E beats EfficientNet at equivalent params"]
+    },
+    {
+      "code": "novelty_unverified",
+      "description": "MRF-DW interaction with DropPath and FCMAE are unverified. These could interact negatively.",
+      "severity": "medium",
+      "recommended_action": "Train ablated versions and measure gradient flow, then train with DropPath sweep (0.0, 0.05, 0.1, 0.2).",
+      "blocked_claims": ["MRF-DW generalizes well", "All three innovations are composable"]
+    },
+    {
+      "code": "ablation_missing",
+      "description": "Optimal stage 3 expansion ratio (×3.5 vs ×4) not tested; LE-GRN kernel size (3 vs 5) not resolved.",
+      "severity": "low",
+      "recommended_action": "Add ×3.5 ablation to ablation_runner.py; run both LE-GRN kernel sizes.",
+      "blocked_claims": []
+    }
+  ],
+  "recommended_next_experiments": [
+    {
+      "priority": 1,
+      "experiment": "Train tiny variant + ablated baseline on ImageNet-1K supervised (300 epochs)",
+      "rationale": "Resolves all blocking_gaps. Without this, no accuracy claims can be verified.",
+      "expected_info": "Top-1 accuracy for V2-E full vs ablated baseline; each innovation's delta"
+    },
+    {
+      "priority": 2,
+      "experiment": "Train uniform downscale baseline [80,160,320,640] at ~19.7M params",
+      "rationale": "Tests the blocking unknown: is V2-E better than a simple ConvNeXt V2-T with uniform channel reduction?",
+      "expected_info": "If uniform downscale is within 0.3% of V2-E, the innovations don't justify the complexity"
+    },
+    {
+      "priority": 3,
+      "experiment": "FCMAE pretraining (400 epochs) + fine-tune (100 epochs) on V2-E",
+      "rationale": "Tests if LE-GRN is compatible with masked autoencoding. Required by lifecycle contract.",
+      "expected_info": "Δtop-1 from FCMAE over supervised-only; should be ≥1.0% if compatible"
+    },
+    {
+      "priority": 4,
+      "experiment": "A100 throughput benchmark at batch=256 for all variants",
+      "rationale": "Required by evaluation requirements. Tests if MRF-DW's 4-8% FLOPs overhead is acceptable.",
+      "expected_info": "images/sec; compare V2-E full vs ablated and vs V2-T (28M)"
+    },
+    {
+      "priority": 5,
+      "experiment": "EfficientNet-B2/B3 comparison via timm",
+      "rationale": "Required by baseline_requirements. Tests if V2-E is Pareto-optimal among efficient ConvNets.",
+      "expected_info": "Accuracy and throughput comparison at equivalent parameter and FLOPs budgets"
+    }
+  ]
+}

@@ -1,0 +1,224 @@
+# ConvNeXt V2-E: Novelty Gaps & Research Lifecycle Contract
+
+---
+
+## Identified Novelty Gaps
+
+### Gap 1: Fixed Receptive Field in ConvNeXt Blocks
+
+**Problem**: ConvNeXt V2 uses a single 7×7 depthwise convolution uniformly across all stages and blocks. For a model under 20M parameters, where channel count is limited, multi-scale feature extraction within each block could improve representational efficiency without significant parameter overhead.
+
+**Partial solutions in literature**:
+- **Inception** (Szegedy et al., 2015): Parallel kernels of different sizes, but uses expensive dense convs
+- **MixConv** (Tan & Le, 2019): Grouped multi-scale depthwise convs in MobileNet, but with channel splitting not per-block mixing
+- **SPP / ASPP**: Multi-scale pooling (spatial pyramid), applied at single points not per-block
+- **ConvNeXt V2** (Woo et al., 2023): Single kernel size per block — no multi-scale mechanism
+
+**Remaining gap**: No work studies **learnable per-channel multi-scale mixing in the ConvNeXt V2 block design** under a constrained parameter budget. MRF-DW fills this with a minimal overhead approach (10–26C params per block).
+
+---
+
+### Gap 2: GRN Lacks Local Contrast Normalization
+
+**Problem**: GRN normalizes using global spatial statistics (RMS over all H×W positions), discarding local contrast information. For models with fewer channels (<20M regime), each channel encodes more distinct features, and local contrast can improve discrimination.
+
+**Partial solutions in literature**:
+- **Local Response Normalization** (Krizhevsky et al., 2012): Local across channels, not spatial
+- **Instance Normalization** (Ulyanov et al., 2016): Per-sample per-channel normalization, but per-pixel not per-region
+- **GRN** (Woo et al., 2023): Global only, no local component
+- **VAN** (Guo et al., 2022): Large kernel attention with local context, different mechanism
+
+**Remaining gap**: No work adds local mean removal as a preprocessing step to GRN within a ConvNeXt block. LE-GRN addresses this with zero additional parameters.
+
+---
+
+### Gap 3: Suboptimal Stage Capacity Allocation at Small Scale
+
+**Problem**: ConvNeXt V2 inherits the 3:3:9:3 block ratio and uniform ×4 expansion from Swin-T, which was designed for a different parameter regime (28M+). For sub-20M models, the optimal allocation of channel capacity and expansion across stages is underexplored.
+
+**Partial solutions in literature**:
+- **EfficientNet** (Tan & Le, 2019): NAS-derived compound scaling, but not specific to ConvNeXt design
+- **ConvNeXt V2** (Woo et al., 2023): Uniform ×4 expansion, no stage-specific ratios published
+- **MobileNetV3** (Howard et al., 2019): NAS-optimized per-stage expansion, but for MBConv not ConvNeXt blocks
+
+**Remaining gap**: No principled study of stage-specific expansion ratios for ConvNeXt V2 blocks under the 20M budget. Adaptive expansion provides a heuristic solution.
+
+---
+
+## Research Lifecycle Contract
+
+```yaml
+task_level: level_1
+domain: CV
+architecture_family: ConvNeXt V2 (modernized ConvNet)
+
+research_question: >
+  Can a ConvNeXt V2 variant under 20M parameters match or exceed the
+  representational capacity of the 28M ConvNeXt V2-T through architectural
+  innovations (multi-scale depthwise mixing, local-enhanced GRN, and
+  stage-adaptive expansion)?
+
+novelty_claims:
+  - claim: >
+      Multi-Receptive Field Depthwise Convolution (MRF-DW) with learnable
+      per-channel mixing improves feature diversity at <0.8% parameter
+      overhead compared to a uniform 7×7 depthwise conv.
+    status: hypothesis
+    evidence: >
+      No prior ConvNeXt variant uses within-block multi-scale depthwise
+      mixing. Inception/MixConv show multi-scale helps but with different
+      block designs and larger models.
+
+  - claim: >
+      Local-Enhanced GRN (LE-GRN) with mean subtraction improves feature
+      competition beyond GRN, at zero additional parameter cost.
+    status: hypothesis
+    evidence: >
+      GRN (Woo et al., 2023) shows global normalization prevents feature
+      collapse. Local contrast enhancement is biologically inspired
+      (center-surround) but untested in ConvNeXt blocks.
+
+  - claim: >
+      Stage-adaptive expansion ratios ([3,3,4,3] vs uniform ×4) allocate
+      capacity more efficiently, saving ~0.95M params without accuracy loss.
+    status: hypothesis
+    evidence: >
+      Computed from parameter analysis: uniform ×4 costs ~1.6M more in early
+      stages where spatial FLOPs dominate, with diminishing returns.
+
+known_related_work:
+  - work: "ConvNeXt V2 (Woo et al., CVPR 2023)"
+    covers: >
+      GRN for feature competition, FCMAE pretraining, scalable ConvNet
+      design.
+    leaves_open: >
+      Fixed 7×7 receptive field, no multi-scale mixing per block, GRN
+      lacks local contrast, uniform expansion across stages.
+
+  - work: "MixConv (Tan & Le, 2019)"
+    covers: >
+      Multi-scale depthwise convs via channel splitting for MobileNets.
+    leaves_open: >
+      Channel splitting not per-block mixing; not adapted for ConvNeXt
+      inverted bottleneck structure; no learnable mixing weights.
+
+  - work: "Inception (Szegedy et al., 2015)"
+    covers: >
+      Parallel kernels of varying sizes with concatenation (not mixing).
+    leaves_open: >
+      Uses expensive dense convs; not designed for modern depthwise+pointwise
+      separation; no per-channel learnable mixing.
+
+  - work: "ConvNeXt V1 (Liu et al., CVPR 2022)"
+    covers: >
+      Modernized ResNet with Transformer-inspired design choices.
+    leaves_open: >
+      No GRN, uniform 7×7 DW, supervised pretraining only.
+
+  - work: "EfficientNet (Tan & Le, ICML 2019)"
+    covers: >
+      Compound scaling for efficient ConvNets with depthwise+SE blocks.
+    leaves_open: >
+      NAS architecture not specific to ConvNeXt block design; limited
+      to MBConv structure; expansion ratio fixed per scaling.
+
+  - work: "FocalNet (Yang et al., 2022)"
+    covers: >
+      Focal modulation replacing self-attention with hierarchical context
+      aggregation.
+    leaves_open: >
+      More complex modulation gate than depthwise conv; not focused on
+      parameter efficiency under 20M; different design philosophy.
+
+  - work: "VAN (Guo et al., 2022)"
+    covers: >
+      Large kernel attention decomposing spatial conv into attention-like
+      mechanism.
+    leaves_open: >
+      Different op (attention ≠ conv); no evaluation in ConvNeXt V2
+      architecture at sub-20M scale.
+
+baseline_requirements:
+  - >
+    Compare against ConvNeXt V2-T (28M) to measure accuracy-per-parameter
+    ratio.
+  - >
+    Compare against ConvNeXt V2 base variant matched to same parameter
+    budget (~19.7M) with uniform 7×7 DW and standard GRN (i.e., ablate
+    each innovation).
+  - >
+    Compare against EfficientNet-B2 (9.2M) and B3 (12M) — closest param
+    competitors in efficient ConvNet space.
+  - >
+    Compare against Swin-T (28M) and Swin-S (50M) to calibrate
+    accuracy-efficiency tradeoff against hierarchical ViTs.
+
+evaluation_requirements:
+  - Primary: Top-1 accuracy on ImageNet-1K validation (224×224)
+  - Secondary: Top-1 on ImageNet-1K with FCMAE pretraining (300-epoch schedule)
+  - Ablation: Top-1 with each innovation ablated (MRF-DW→single-7×7,
+    LE-GRN→GRN, e=4→e=3 uniform) under identical training
+  - Efficiency: Throughput (images/sec) on a single NVIDIA A100 at batch=256
+  - Memory: Peak GPU memory during training and inference at batch=256
+  - Compute: Total FLOPs per forward pass (224×224 input)
+
+claim_status:
+  grounded:
+    - "ConvNeXt V2 block parameter formula: P = 8e·C² + 53·C per block"
+    - "ConvNeXt V2-T achieves 82.8% top-1 with FCMAE (IN-1K)"
+    - "GRN improves V2 over V1 by +0.8% (supervised) and +1.1% (FCMAE)"
+    - "EfficientNet-B1 achieves 79.1% top-1 at 7.8M params"
+    - "Uniform 7×7 DW used in all ConvNeXt V2 published variants"
+    - "Stage 3 dominates FLOPs and params in ConvNeXt V2-T (38.6% params, ~50% FLOPs)"
+
+  hypotheses:
+    - "MRF-DW adds ≥0.3% top-1 over single-kernel DW at same param budget"
+    - "LE-GRN adds ≥0.2% top-1 over standard GRN at zero param overhead"
+    - "Adaptive expansion [3,3,4,3] matches uniform ×4 accuracy at 0.95M fewer params"
+    - "ConvNeXt V2-E at 19.7M matches or exceeds ConvNeXt V2-Nano at ~15M by ≥1.5%"
+
+  TODO_unverified:
+    - "Optimal per-stage mixing weight initialization for MRF-DW"
+    - "MRF-DW interaction with DropPath — does multi-scale robustness interact?"
+    - "Best LE-GRN local kernel size (tested 3×3 vs 5×5 vs two-stage)"
+    - "Does FCMAE pretraining amplify or diminish MRF-DW benefits?"
+    - "Optimal stage 3 expansion ratio (tested ×3.5 vs ×4, diminishing returns curve)"
+    - "ConvNeXt V2-E accuracy vs MobileNetV4 / FastViT at equivalent FLOPs"
+
+blocking_unknowns:
+  - >
+    If ConvNeXt V2-E does not outperform a resized ConvNeXt V2-T with
+    uniform downscaling (e.g., c=[80,160,320,640], b=[3,3,9,3], e=4) at the
+    same param budget, then the innovations do not justify the architectural
+    complexity.
+  - >
+    If MRF-DW shows <0.15% improvement over single-7×7 at the same parameter
+    count (but 4–8% extra FLOPs), the FLOPs-accuracy tradeoff may be
+    unfavorable despite parameter efficiency.
+  - >
+    If LE-GRN degrades accuracy at high DropPath rates (>0.2), it may not be
+    compatible with deep configurations.
+  - >
+    If FCMAE pretraining does not transfer well to ConvNeXt V2-E (due to
+    altered feature statistics from LE-GRN), the pretraining protocol may
+    need modification, changing the scope of the architecture-only claim.
+
+recommended_direction: >
+  Design ConvNeXt V2-E with all three innovations active, train supervised
+  on ImageNet-1K for 300 epochs, and measure the accuracy gap to ConvNeXt
+  V2-T (28M). Then ablate each innovation one-by-one on the same schedule
+  to isolate contributions. If the full model achieves within 0.5% of
+  ConvNeXt V2-T at 70% of parameters and 84% of FLOPs, the direction is
+  validated as a Pareto improvement in the accuracy-efficiency tradeoff.
+
+  Expected observable behavior:
+  - ConvNeXt V2-E achieves 80.5–81.5% top-1 supervised (vs V2-T at 82.0%)
+  - MRF-DW ablation drops 0.3–0.5% (to 80.0–81.0%)
+  - LE-GRN ablation drops 0.2–0.3% (to 80.3–81.2%)
+  - Adaptive expansion saves 0.95M params with ≤0.1% accuracy loss
+
+  Falsification condition: >
+    If ConvNeXt V2-E does not achieve ≥80.0% top-1 (supervised, 300 epochs,
+    224×224), or if any single innovation accounts for <0.15% improvement
+    over its ablated baseline, the respective claim is falsified.
+```

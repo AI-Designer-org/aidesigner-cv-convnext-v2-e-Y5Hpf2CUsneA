@@ -1,0 +1,31 @@
+{
+  "verdict": "needs_revision",
+  "iteration": 1,
+  "summary": "The required paper draft could not be reviewed because PAPER.tex is missing or unreadable at the specified path. A critique pass cannot proceed until the draft is present and accessible.",
+  "issues": [
+    {
+      "id": "i_01",
+      "severity": "blocker",
+      "category": "structure",
+      "location": "PAPER.tex",
+      "problem": "The required input file PAPER.tex is missing or unreadable at /artifacts/j_Y5Hpf2CUsneA/work/paper/v1/PAPER.tex, so the draft cannot be reviewed end-to-end.",
+      "suggested_fix": "Place a readable PAPER.tex at the specified path and rerun the critique pass.",
+      "persisted_from_previous": false
+    }
+  ],
+  "scope_check": {
+    "overstates_empirical_results": false,
+    "claims_sota_without_numbers": false,
+    "relabels_synthetic_as_real": false,
+    "demands_trained_model_results": false,
+    "ignores_research_eval_gaps": false,
+    "states_unverified_claim_as_fact": false,
+    "claims_baseline_superiority_without_coverage": false
+  },
+  "stats": {
+    "blockers": 1,
+    "majors": 0,
+    "minors": 0,
+    "nits": 0
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "verdict": "needs_revision",
+  "iteration": 2,
+  "summary": "The draft is much improved and largely respects the reference-architecture scope, but a few result-reporting and factual-grounding issues remain. In particular, one results table presents benchmark targets as if they were measured outputs, and one discussion claim exceeds what the validator artifacts verify.",
+  "issues": [
+    {
+      "id": "i_02",
+      "severity": "major",
+      "category": "claims",
+      "location": "Results, Table 4 (lines 594-600)",
+      "problem": "The synthetic micro-benchmark table reports threshold targets (e.g., \">2.93\", \">0.50\", \"~3.8G\") rather than measured outputs from actual runs, even though the prose says the harness \"produces the following measurements.\" This blurs implemented metrics with aspirational criteria.",
+      "suggested_fix": "Replace each threshold/target entry with an actual measured value from the benchmark scripts, or relabel the table as expected acceptance criteria / benchmark definitions rather than results.",
+      "persisted_from_previous": false
+    },
+    {
+      "id": "i_03",
+      "severity": "major",
+      "category": "factual",
+      "location": "Discussion, first bullet (lines 641-643)",
+      "problem": "The paper claims the model is safe for low-precision training \"without additional loss scaling,\" but the validator artifacts only check finite forward/backward behavior; they do not establish that training can proceed reliably without loss scaling across an optimization run.",
+      "suggested_fix": "Narrow this statement to the verified scope, e.g. that unit tests show finite fp16/bf16 forward and backward passes, without claiming end-to-end low-precision training behavior or the absence of needed loss scaling.",
+      "persisted_from_previous": false
+    },
+    {
+      "id": "i_04",
+      "severity": "minor",
+      "category": "factual",
+      "location": "Method, Eq. (9) and Results, Table 2 (lines 394-402 and 549-551)",
+      "problem": "The paper gives inconsistent parameter-savings figures for adaptive expansion: Eq. (9) states approximately 952K parameters saved, while Table 2 reports -1,904,640 parameters. The grounded artifact files support ~952,320 savings, not ~1.9M.",
+      "suggested_fix": "Use a single grounded number consistently throughout the paper; if reporting the delta versus the full model ablation, explain the comparison basis explicitly and align Table 2 with the validated ~952,320 saving.",
+      "persisted_from_previous": false
+    },
+    {
+      "id": "i_05",
+      "severity": "minor",
+      "category": "structure",
+      "location": "Appendix, NeurIPS checklist item 5 (lines 887-891) and Conclusion (lines 717-720)",
+      "problem": "The paper states that code is publicly available / released, but the artifacts only show an artifact bundle in the pipeline workspace; no repository URL, archive DOI, or release location is provided.",
+      "suggested_fix": "Soften to \"included in the submission artifact bundle\" or provide the actual public release location if one exists.",
+      "persisted_from_previous": false
+    }
+  ],
+  "scope_check": {
+    "overstates_empirical_results": false,
+    "claims_sota_without_numbers": false,
+    "relabels_synthetic_as_real": false,
+    "demands_trained_model_results": false,
+    "ignores_research_eval_gaps": false,
+    "states_unverified_claim_as_fact": false,
+    "claims_baseline_superiority_without_coverage": false
+  },
+  "stats": {
+    "blockers": 0,
+    "majors": 2,
+    "minors": 2,
+    "nits": 0
+  }
+}
